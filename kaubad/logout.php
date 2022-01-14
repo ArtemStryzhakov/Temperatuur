@@ -1,4 +1,4 @@
 <?php
 session_start();
 session_destroy();
-header("location: kaubahaldus.php");
+header("Location: maahaldus.php");

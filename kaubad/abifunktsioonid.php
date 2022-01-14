@@ -1,36 +1,30 @@
 <?php
-//lisame oma kasutajanimi, parooli, ja ab_nimi
-$yhendus=new mysqli("localhost", "artemstryz", "123456", "artemstryz");
-//$sorttulp - sorteerimise veerg
-//$otsisona - otsingusõna
-function kysiKaupadeAndmed($sorttulp="temperatuur", $otsisona=""){
+$yhendus=new mysqli("d105623.mysql.zonevs.eu", "d105623_stryzhak", "Art02fal+!", "d105623_artemandm");//"d105617.mysql.zonevs.eu", "d105617_krohhin", "AKEYfass123", "d105617_jaan";  "localhost", "jaan", "123456", "jaan"
+function kysiIlmadeAndmed($sorttulp="temperatuur", $otsisona=""){
     global $yhendus;
     $lubatudtulbad=array("temperatuur", "maakonnanimi", "aeg");
     if(!in_array($sorttulp, $lubatudtulbad)){
         return "lubamatu tulp";
     }
-    //addslashes - stripslashes -lisab langjoone - kustutab langjoone
     $otsisona=addslashes(stripslashes($otsisona));
     $kask=$yhendus->prepare("SELECT ilmatemperatuur.id, temperatuur, maakonnanimi, aeg
        FROM ilmatemperatuur, maakondad
        WHERE ilmatemperatuur.maakonna_id=maakondad.id
-        AND (temperatuur LIKE '%$otsisona%' OR maakonnanimi LIKE '%$otsisona%')
+        AND (temperatuur LIKE '%$otsisona%' OR maakonnanimi LIKE '%$otsisona%' OR aeg LIKE '%$otsisona%')
        ORDER BY $sorttulp");
-    //echo $yhendus->error;
-    $kask->bind_result($id, $nimetus, $grupinimi, $hind);
+    $kask->bind_result($id, $temperatuur, $maakonnanimi, $kuupaev);
     $kask->execute();
     $hoidla=array();
     while($kask->fetch()){
-        $kaup=new stdClass();
-        $kaup->id=$id;
-        $kaup->nimetus=htmlspecialchars($nimetus);
-        $kaup->grupinimi=htmlspecialchars($grupinimi);
-        $kaup->hind=$hind;
-        array_push($hoidla, $kaup);
+        $maailm=new stdClass();
+        $maailm->id=$id;
+        $maailm->temperatuur=htmlspecialchars($temperatuur);
+        $maailm->maakonnanimi=htmlspecialchars($maakonnanimi);
+        $maailm->aeg=$kuupaev;
+        array_push($hoidla, $maailm);
     }
     return $hoidla;
 }
-//loob dropdownList
 function looRippMenyy($sqllause, $valikunimi, $valitudid=""){
     global $yhendus;
     $kask=$yhendus->prepare($sqllause);
@@ -45,43 +39,31 @@ function looRippMenyy($sqllause, $valikunimi, $valitudid=""){
     $tulemus.="</select>";
     return $tulemus;
 }
-// lisab uue kaubagrupi
-function lisaGrupp($grupinimi){
+function lisaMaa($maakonnanimi,$maakonnakeskus){
     global $yhendus;
-    $kask=$yhendus->prepare("INSERT INTO kaubagrupid (grupinimi)
-                      VALUES (?)");
-    $kask->bind_param("s", $grupinimi);
+    $kask=$yhendus->prepare("INSERT INTO maakondad(maakonnanimi, maakonnakeskus) VALUES(?,?)");
+    $kask->bind_param("ss", $maakonnanimi,$maakonnakeskus);
     $kask->execute();
 }
-// lisab andmed tabeli Kaubad
-
-function lisaKaup($nimetus, $kaubagrupi_id, $hind){
+function lisaIlm($temperatuur, $maakonna_id, $kuupaev){
     global $yhendus;
     $kask=$yhendus->prepare("INSERT INTO
-       kaubad (nimetus, kaubagrupi_id, hind)
+       ilmatemperatuur(temperatuur, maakonna_id, aeg)
        VALUES (?, ?, ?)");
-    $kask->bind_param("sid", $nimetus, $kaubagrupi_id, $hind);
+    $kask->bind_param("dis", $temperatuur, $maakonna_id, $kuupaev);
     $kask->execute();
 }
-// kustutab kaubad tabelist kaubad
-
-function kustutaKaup($kauba_id){
+function kustutaIlm($ilm_id){
     global $yhendus;
-    $kask=$yhendus->prepare("DELETE FROM kaubad WHERE id=?");
-    $kask->bind_param("i", $kauba_id);
+    $kask=$yhendus->prepare("DELETE FROM ilmatemperatuur WHERE id=?");
+    $kask->bind_param("i", $ilm_id);
     $kask->execute();
 }
-
-// muudab andmed tabelis kaubad
-
-function muudaKaup($kauba_id, $nimetus, $kaubagrupi_id, $hind){
+function muudaIlm($ilm_id, $temp, $maakonna_id, $kuupaev){
     global $yhendus;
-    $kask=$yhendus->prepare("UPDATE kaubad SET nimetus=?, kaubagrupi_id=?, hind=?
-                      WHERE id=?");
-    $kask->bind_param("sidi", $nimetus, $kaubagrupi_id, $hind, $kauba_id);
+    $kask=$yhendus->prepare("UPDATE ilmatemperatuur SET temperatuur=?, maakonna_id=?, aeg=? WHERE id=?");
+    $kask->bind_param("disi", $temp, $maakonna_id, $kuupaev, $ilm_id);
     $kask->execute();
 }
-
-
 
 
